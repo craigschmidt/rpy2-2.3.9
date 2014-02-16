@@ -128,18 +128,26 @@ class build_ext(_build_ext):
 
         _build_ext.finalize_options(self) 
         if self.r_home is None:
-            tmp = os.popen("R RHOME")
-            self.r_home = tmp.readlines()
-            tmp.close()
-            if len(self.r_home) == 0:
-                raise SystemExit("Error: Tried to guess R's HOME but no R command in the PATH.")
-
-    #Twist if 'R RHOME' spits out a warning
-            if self.r_home[0].startswith("WARNING"):
-                self.r_home = self.r_home[1]
+            
+            # use the R_HOME environment variable if it exists
+            if 'R_HOME' in os.environ:
+                self.r_home = os.environ['R_HOME']
+                if len(self.r_home) == 0:
+                    raise SystemExit("Error: Tried to use R_HOME environment variable, but it is empty.")
             else:
-                self.r_home = self.r_home[0]
-            #self.r_home = [self.r_home, ]
+                # see if R is in our current path, and ask it for the value of R HOME
+                tmp = os.popen("R RHOME")
+                self.r_home = tmp.readlines()
+                tmp.close()
+                if len(self.r_home) == 0:
+                    raise SystemExit("Error: Tried to guess R's HOME but no R command in the PATH.")
+
+                #Twist if 'R RHOME' spits out a warning
+                if self.r_home[0].startswith("WARNING"):
+                    self.r_home = self.r_home[1]
+                else:
+                    self.r_home = self.r_home[0]
+                #self.r_home = [self.r_home, ]
 
         if self.r_home is None:
             raise SystemExit("Error: --r-home not specified.")
